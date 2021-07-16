@@ -1,19 +1,16 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 import querystring from 'querystring';
 import jsonp from 'jsonp';
-import { RequestParams } from './request.types';
-import promisify from './promisify';
 
-interface IAxiosInstance extends AxiosInstance {
-  jsonp?: () => void
-}
+import promisify from './promisify';
+import { IAxiosInstance, RequestParams, JsonpOptions } from './request.types';
 
 const instance: IAxiosInstance = axios.create({
   baseURL: '/',
   timeout: 10000,
   withCredentials: true,
   headers: {
-    'Content-type': 'application/x-www-form-urlencoded'
+    'Content-Type': 'application/x-www-form-urlencoded'
   }
 });
 
@@ -31,7 +28,7 @@ class Request {
       console.log(config);
       config.headers = { ...config.headers, ...headers };
       if (isJson) {
-        config.headers['Content-type'] = 'application/json;charset=utf-8';
+        config.headers['Content-Type'] = 'application/json;charset=utf-8';
       }
       return config;
     });
@@ -59,6 +56,12 @@ class Request {
 
   put() {
     return instance.put(this.url, this._data);
+  }
+
+  jsonp(options?: JsonpOptions) {
+    return instance.jsonp && instance.jsonp(this.url, options).then(res => {
+      return res;
+    })
   }
 }
 
