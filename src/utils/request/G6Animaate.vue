@@ -13,7 +13,7 @@ import {
   register,
   subStyleProps,
 } from '@antv/g6';
-import { createEdgeCycleList } from '../utils';
+// import { createEdgeCycleList } from '../utils';
 const container = ref(null);
 let graph = null;
 const markerMap = {};
@@ -22,7 +22,7 @@ const markerMap = {};
 //   'edge-2': 'edge-3',
 //   'edge-3': 'edge-1',
 // };
-const cycleListMap = {
+/* const cycleListMap = {
   'edge-1': createEdgeCycleList({
     'edge-1': 'edge-2',
     'edge-2': 'edge-1',
@@ -54,9 +54,55 @@ const cycleListMap = {
   'edge-13': createEdgeCycleList({
     'edge-13': 'edge-13',
   })
+}; */
+/* const cycleListMap = {
+  'edge-1': {
+    'edge-1': 'edge-2',
+    'edge-2': 'edge-1',
+  },
+  'edge-3': {
+    'edge-3': 'edge-5',
+    'edge-5': 'edge-3',
+  },
+  'edge-4': {
+    // 'edge-4': 'edge-5',
+    'edge-5': 'edge-4',
+  },
+  'edge-6': {
+    'edge-6': 'edge-6',
+  },
+  'edge-7': {
+    'edge-7': 'edge-8',
+    'edge-8': 'edge-9',
+    'edge-9': 'edge-7',
+  },
+  'edge-10': {
+    'edge-10': 'edge-12',
+    'edge-12': 'edge-10',
+  },
+  'edge-11': {
+    'edge-11': 'edge-12',
+    'edge-12': 'edge-11',
+  },
+  'edge-13': {
+    'edge-13': 'edge-13',
+  }
+}; */
+const edgePipeMap = {
+  'edge-1': ['edge-2'],
+  'edge-2': ['edge-1'],
+  'edge-3': ['edge-5'],
+  'edge-5': ['edge-3', 'edge-4'],
+  'edge-6': ['edge-6'],
+  'edge-7': ['edge-8'],
+  'edge-8': ['edge-9'],
+  'edge-9': ['edge-7'],
+  'edge-10': ['edge-12'],
+  'edge-12': ['edge-10', 'edge-11'],
+  'edge-13': ['edge-13'],
 };
 // console.log('cycleListMap', cycleListMap);
-const durationMap = {}
+const durationMap = {};
 class FlyMarkerCubic extends Polyline {
   getMarkerStyle(attributes) {
     return {
@@ -71,6 +117,9 @@ class FlyMarkerCubic extends Polyline {
   }
 
   onCreate() {
+    // const [sourcePoint, targetPoint] = this.getEndpoints(this.attributes)
+    // console.log('x', graph.getElementPosition('node-0'));
+    // console.log('sourcePoint, targetPoint', sourcePoint, targetPoint);
     const marker = this.upsert(
       'marker',
       'path',
@@ -85,15 +134,19 @@ class FlyMarkerCubic extends Polyline {
     ); */
     markerMap[this.id] = marker;
     durationMap[this.id] = this.attributes.duration;
-    let cycleList = cycleListMap[this.id];
-    let id = this.id;
-    if (!this.attributes.animateOnCreate || !cycleList) {
+    // let cycleList = cycleListMap[this.id];
+    // let id = this.id;
+    // if (!this.attributes.animateOnCreate || !cycleList) {
+    if (!this.attributes.animateOnCreate) {
       return;
     }
-    runAnimate(marker, durationMap[id]);
+    // console.log('this.id', this.id);
+    runAnimate(this.id);
     // console.log('runAnimate', runAnimate);
 
-    function runAnimate(mark, duration) {
+    function runAnimate(id) {
+      const mark = markerMap[id];
+      const duration = durationMap[id];
       mark.attr('visibility', 'visible');
       mark
         .animate([{ offsetDistance: 0 }, { offsetDistance: 1 }], {
@@ -101,18 +154,22 @@ class FlyMarkerCubic extends Polyline {
           // iterations: Infinity,
         })
         .finished.then(() => {
-          id = cycleList.next.edgeId;
-          cycleList = cycleList.next;
+          // id = cycleList.next.edgeId;
+          // cycleList = cycleList.next;
+          const ids = edgePipeMap[id];
+          // console.log('ids', ids);
           mark.attr('visibility', 'hidden');
-          runAnimate(markerMap[id], durationMap[id]);
+          ids?.forEach((i) => {
+            runAnimate(i);
+          });
         });
     }
   }
   onDestroy() {
     // console.log('1', this.attributes);
-    delete cycleListMap[this.id]
-    delete durationMap[this.id]
-    delete markerMap[this.id]
+    // delete cycleListMap[this.id]
+    delete durationMap[this.id];
+    delete markerMap[this.id];
   }
 }
 
@@ -240,9 +297,8 @@ onMounted(() => {
           source: 'node-7',
           target: 'node-10',
           style: {
-
             duration: 1000,
-          }
+          },
         },
         {
           id: 'edge-9',
