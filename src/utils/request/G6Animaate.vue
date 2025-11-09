@@ -89,18 +89,32 @@ const markerMap = {};
   }
 }; */
 const edgePipeMap = {
-  'edge-1': ['edge-2'],
-  'edge-2': ['edge-1'],
+  // 'edge-1': ['edge-2'],
+  'edge-1': ['edge-14'],
+  'edge-14': ['edge-15'],
+  // 'edge-2': ['edge-1'],
   'edge-3': ['edge-5'],
-  'edge-5': ['edge-3', 'edge-4'],
-  'edge-6': ['edge-6'],
+  // 'edge-3': ['edge-5'],
+  // 'edge-5': ['edge-3', 'edge-4'],
+  // 'edge-6': ['edge-6'],
   'edge-7': ['edge-8'],
   'edge-8': ['edge-9'],
-  'edge-9': ['edge-7'],
+  // 'edge-9': ['edge-7'],
   'edge-10': ['edge-12'],
-  'edge-12': ['edge-10', 'edge-11'],
-  'edge-13': ['edge-13'],
+  // 'edge-12': ['edge-10', 'edge-11'],
+  // 'edge-13': ['edge-13'],
 };
+const animateOnCreateEdges = [
+  // 'edge-1',
+  // 'edge-3',
+  // 'edge-4',
+  // 'edge-6',
+  // 'edge-7',
+  // 'edge-10',
+  // 'edge-11',
+  // 'edge-13',
+];
+let animateCycleCount = 14;
 // console.log('cycleListMap', cycleListMap);
 const durationMap = {};
 class FlyMarkerCubic extends Polyline {
@@ -112,11 +126,15 @@ class FlyMarkerCubic extends Polyline {
       stroke: '#f60',
       visibility: 'hidden',
       offsetPath: this.shapeMap.key,
+      transform: attributes.transform || 'rotate(-90deg)',
       ...subStyleProps(attributes, 'marker'),
     };
   }
 
   onCreate() {
+    if (this.attributes.noMarker) {
+      return
+    }
     // const [sourcePoint, targetPoint] = this.getEndpoints(this.attributes)
     // console.log('x', graph.getElementPosition('node-0'));
     // console.log('sourcePoint, targetPoint', sourcePoint, targetPoint);
@@ -140,8 +158,18 @@ class FlyMarkerCubic extends Polyline {
     if (!this.attributes.animateOnCreate) {
       return;
     }
+
+    console.log('markerMap', markerMap);
     // console.log('this.id', this.id);
-    runAnimate(this.id);
+    animateOnCreateEdges.push(this.id);
+    // console.log('a', animateOnCreateEdges);
+    console.log('animateOnCreateEdges.length', animateOnCreateEdges.length);
+    if (animateOnCreateEdges.length === 8) {
+      animateOnCreateEdges.forEach((edgeId) => {
+        runAnimate(edgeId);
+      });
+    }
+    // runAnimate(this.id);
     // console.log('runAnimate', runAnimate);
 
     function runAnimate(id) {
@@ -157,11 +185,22 @@ class FlyMarkerCubic extends Polyline {
           // id = cycleList.next.edgeId;
           // cycleList = cycleList.next;
           const ids = edgePipeMap[id];
+          // console.log('ids', ids, id);
           // console.log('ids', ids);
           mark.attr('visibility', 'hidden');
-          ids?.forEach((i) => {
-            runAnimate(i);
-          });
+          animateCycleCount--;
+          if (animateCycleCount === 0) {
+            console.log('animateCycleCount', animateCycleCount);
+            animateCycleCount = 14;
+            animateOnCreateEdges.forEach((edgeId) => {
+              runAnimate(edgeId);
+            });
+            return;
+          } else {
+            ids?.forEach((i) => {
+              runAnimate(i);
+            });
+          }
         });
     }
   }
@@ -191,6 +230,16 @@ const nodeMap = {
   'node-11': { id: 'node-11', style: { x: 400, y: 450, size: [60, 20] } },
   'node-12': { id: 'node-12', style: { x: 100, y: 580 } },
   'node-13': { id: 'node-13', style: { x: 300, y: 300, size: [120, 60] } },
+};
+nodeMap['node-14'] = {
+  id: 'node-14',
+  type: 'circle',
+  style: {
+    x: nodeMap['node-6'].style.x,
+    y: nodeMap['node-13'].style.y,
+    size: 1,
+    fill: 'transparent',
+  },
 };
 const size = [30, 20];
 register(ExtensionCategory.EDGE, 'fly-marker-cubic', FlyMarkerCubic);
@@ -228,6 +277,25 @@ onMounted(() => {
           },
         },
         {
+          id: 'edge-14',
+          source: 'node-6',
+          target: 'node-14',
+          style: {
+            stroke: 'transparent',
+            duration: 1400
+          }
+        },
+        {
+          id: 'edge-15',
+          source: 'node-14',
+          target: 'node-13',
+          style: {
+            stroke: 'transparent',
+            duration: 1100,
+            transform: 'rotate(0deg)'
+          }
+        },
+        {
           id: 'edge-2',
           source: 'node-6',
           target: 'node-13',
@@ -236,6 +304,7 @@ onMounted(() => {
               [nodeMap['node-6'].style.x, nodeMap['node-13'].style.y],
             ],
             duration: 2500,
+            noMarker: true,
           },
         },
         {
@@ -383,6 +452,7 @@ onMounted(() => {
   });
 
   graph.render();
+  console.log('len', graph.getEdgeData().length);
   // graph.updateEdgeData([{id: 'edge-1', style: { lineWidth: 3, lineDash: [5,5] } }])
   // graph.draw()
   // console.log('1', 1);
